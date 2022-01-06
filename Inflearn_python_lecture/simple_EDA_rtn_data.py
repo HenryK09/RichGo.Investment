@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 
 df = pd.read_csv('C:/Users/user/Desktop/inflearn_pandas_part1_material/my_data/fin_statement_new.csv')
 
-df = df.drop(['결산월','상장일'], axis=1)
+df = df.drop(['결산월','상장일'], axis=1) # 필요없는 열 제거
 
 df = df.rename(columns={"P/E(Adj., FY End)": "PER",
                         'P/B(Adj., FY End)': "PBR",
                         'P/FCF1(Adj., FY End)': 'PSR'})
+
 # companies by each year
 df.groupby(['year'])['Name'].count()
 # code-name mapping
@@ -30,17 +31,18 @@ top_roa_df = df.loc[roa_df['level_1']]
 indicator_df = top_roa_df.pivot(index='year', columns='Name', values='ROA')
 
 asset_on_df = indicator_df.notna().astype(int).replace(0, np.nan)
+# notna() -> nan값이 아닌 값을 True로 반환
+# astype(int) -> True = 1, False = 0
+# replace(0, np.nan) -> 나중에 데이터프레임끼리 곱할 때 수익률이 0인 것과 구분해주기 위함
 
 selected_rtn_df = yearly_rtn_df * asset_on_df
 selected_rtn_df.notna().sum(axis=1)
 
-# 함수화
-rtn_sr = selected_rtn_df.mean(axis=1)
-cum_rtn_sr = (rtn_sr + 1).cumprod().dropna()
-
+# 자주 쓸 코드 함수화
 def get_rtn_sr(selected_rtn_df):
     rtn_sr = selected_rtn_df.mean(axis=1)
-    cum_rtn_sr = (rtn_sr + 1).cumprod().dropna()
+    cum_rtn_sr = (rtn_sr + 1).cumprod().dropna() # 누적수익률 구한 후 nan값 제거
+
     return rtn_sr, cum_rtn_sr
 
 def plot_rtn(cum_rtn_sr, rtn_sr):
@@ -51,12 +53,12 @@ def plot_rtn(cum_rtn_sr, rtn_sr):
     axes[1].set_title('yearly return(bar)')
 
 # quantile
-qt_y_sr = df.groupby(['year'])[indicator].quantile(0.9)
+qt_y_sr = df.groupby(['year'])[indicator].quantile(0.9) # indicator = ROA, quantile(0.9) -> 이상치 제거
 qt_indicator_df = df.join(qt_y_sr, how='left', on='year', rsuffix='_quantile')
 qt_indicator_df = qt_indicator_df[
     qt_indicator_df[indicator] >= qt_indicator_df['{}_quantile'.format(indicator)]
 ]
-qt_indicator_df.groupby('year')['Code'].count()
+qt_indicator_df.groupby('year')['Code'].count() # 연도별 위 조건에 해당되는 종목코드 개수 추출
 
 indicator_df2 = df.loc[qt_indicator_df.index].pivot(index='year', columns='Name', values=indicator)
 asset_on_df2 = indicator_df2.notna().astype(int).replace(0,np.nan)
