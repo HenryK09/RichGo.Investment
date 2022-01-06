@@ -20,7 +20,7 @@ df.groupby(['year','Name'])['Code'].nunique().nunique() # => 1; code-name align
 # yearly returns
 yearly_price_df = df.pivot(index='year', columns='Name', values='수정주가')
 # shift(-1) = xx년도에 xx만큼 수익이 났다고 해석하기 위함
-yearly_rtn_df = yearly_price_df.pct_change(fill_method=None).shift(-1)
+yearly_rtn_df = yearly_price_df.pct_change(fill_method=None).shift(-1) # lagging 할 때 씀
 yearly_rtn_df.isna().sum()
 
 # top_n
