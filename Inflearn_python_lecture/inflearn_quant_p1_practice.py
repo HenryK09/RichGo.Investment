@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # describe
-df.describe().T
+df.describe().T # 데이터 컬럼 개수가 많아서 오른쪽으로 스크롤해야 하는 수고를 안해도 됨
 df.describe(percentiles=[0.01, 0.03, 0.99]).T.head()
 
 # unique(), value_counts()
@@ -12,12 +12,12 @@ df['TIGER 200'].unique()
 df['TIGER 200'].value_counts(normalize=True) # 정규화
 
 # 정렬
-df.nsmallest(5, 'TIGER 200').nlargest(5,'TIGER 차이나CSI300')
+df.nsmallest(5, 'TIGER 200').nlargest(5,'TIGER 차이나CSI300') # kopsi200 기준 가장 작은 값 5개로 먼저 정렬 후 csi300 기준 가장 큰 값 5개로 정렬
 df.sort_values(['TIGER 200','TIGER 미국S&P500선물(H)'], ascending=[False,True]) # 앞에 값이 중복될 경우 뒤에 값으로 정렬
 
 # Subset 추출
 # Subset 추출하기 by columns
-df.filter(like="S")
+df.filter(like="S") # S가 들어 있는 컬럼들로만 구성되 데이터로 뽑기
 df.filter(regex='일\w+5')
 # Subset 추출하기 by dtype
 df.select_dtypes(include=['float'])
@@ -30,14 +30,14 @@ df.loc[['2021-07-08','2021-09-08'], 'TIGER 200']
 df.loc['2021-08-01':'2021-09-30', 'TIGER 200']
 df.iloc[[0,10], :]
 df.iloc[[2,44],[1,2]]
-# Subset 추출하기 by at
+# Subset 추출하기 by at (loc 보다 속도가 빠른 방법)
 df.at['2020-03-04','TIGER 200']
 
 
 # all(), any()
-a = df['TIGER 200'] > 0
-a.all()
-a.any()
+a = df['TIGER 200'] > 0 # 0보다 큰 값을 True로 내보내는
+a.all() # 모든 값이 True -> True
+a.any() # 하나라도 True -> True
 
 # Top 5 수익률 날짜 필터링
 df['TIGER 200'].nlargest(5).index
@@ -49,8 +49,8 @@ df['TIGER 200'].nlargest(5).index
 df['TIGER 차이나CSI300'].hasnans
 df.isnull()
 df.isnull().any(axis=0) # 각 칼럼별로 nan이 하나라도 있는지에 대해서 bool값으로 나타냄
-df['TIGER 차이나CSI300'].isna().sum()
-df2 = df.copy().fillna(0)
+df['TIGER 차이나CSI300'].isna().sum() # nan값 개수 합
+df2 = df.copy().fillna(0) # nan값 0으로 채우는
 
 # 두 개의 DataFrame이 같은지 판단하려면, equals 사용하기
 df['TIGER 200'].equals(df['TIGER 차이나CSI300'])
@@ -67,7 +67,7 @@ bins = [-np.inf, 0, np.inf]
 labels = ['손실','이익']
 df_cuts = pd.cut(df['rtn_kospi'], bins=bins, labels=labels)
 # qcut() 함수로 수익률 그룹 나누기
-df2['rtn_kospi'] = df2['TIGER 200'].pct_change().shift(-1)
+df2['rtn_kospi'] = df2['TIGER 200'].pct_change().shift(-1) # shift(-1)은 xx년도에 xx수익률로 읽고자
 df2.loc[:, 'rtn_score'] = pd.qcut(df['rtn_kospi'], 10, labels=range(1,11))
 df2['rtn_score'].value_counts()
 
@@ -96,5 +96,3 @@ _ = ax2.set_title('kospi rtn', fontsize=15, family='Arial');
 _ = ax2.set_ylabel('rtn', fontsize=15, family='Arial');
 _ = ax2.set_xlabel('date', fontsize=15, family='Arial');
 ax2.legend(loc="upper left")
-
-ipynb_py_convert /PycharmProjects/krx_data_crawl/etf_month_pivot.py /PycharmProjects/krx_data_crawl/etf_M_pivot.ipynb
