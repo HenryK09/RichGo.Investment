@@ -5,6 +5,8 @@ sp500 = pd.read_csv('C:/Users/user/Desktop/practice_data/tiger_sp500.csv', encod
 nikkei225 = pd.read_csv('C:/Users/user/Desktop/practice_data/tiger_nikkei225.csv', encoding='cp949', index_col=1)
 csi300 = pd.read_csv('C:/Users/user/Desktop/practice_data/tiger_csi300.csv', encoding='cp949', index_col=1)
 
+abc
+
 kospi.index = pd.to_datetime(kospi.index)
 sp500.index = pd.to_datetime(sp500.index)
 nikkei225.index = pd.to_datetime(nikkei225.index)
