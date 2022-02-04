@@ -140,16 +140,14 @@ rtn_df.plot(kind='bar')
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize = (15,3), sharex=True)
 ax1 = axes[0]
 ax2 = axes[1]
-ax1.plot(df2['rtn_kospi'].index, df2['date'].index, linewidth=2, linestyle='--', label='rtn');
-_ = ax1.set_title('kospi rtn', fontsize=15, family='Arial');
-_ = ax1.set_ylabel('rtn', fontsize=15, family='Arial');
-_ = ax1.set_xlabel('date', fontsize=15, family='Arial');
+ax1.plot(df2['rtn_kospi'].index, df2['date'].index, linewidth=2, linestyle='--', label='rtn')
+_ = ax1.set_title('kospi rtn', fontsize=15, family='Arial')
+_ = ax1.set_ylabel('rtn', fontsize=15, family='Arial')
+_ = ax1.set_xlabel('date', fontsize=15, family='Arial')
 ax1.legend(loc="upper left")
 
-ax2.bar(df.index, df, label='rtn');
-_ = ax2.set_title('kospi rtn', fontsize=15, family='Arial');
-_ = ax2.set_ylabel('rtn', fontsize=15, family='Arial');
-_ = ax2.set_xlabel('date', fontsize=15, family='Arial');
+ax2.bar(df.index, df, label='rtn')
+_ = ax2.set_title('kospi rtn', fontsize=15, family='Arial')
+_ = ax2.set_ylabel('rtn', fontsize=15, family='Arial')
+_ = ax2.set_xlabel('date', fontsize=15, family='Arial')
 ax2.legend(loc="upper left")
-
-ipynb_py_convert /PycharmProjects/krx_data_crawl/etf_month_pivot.py /PycharmProjects/krx_data_crawl/etf_M_pivot.ipynb
