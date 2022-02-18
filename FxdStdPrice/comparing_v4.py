@@ -13,7 +13,7 @@ fp_df['기준일자'] = pd.to_datetime(fp_df['기준일자'])
 df = pd.merge(tri_df, fp_df, left_on='AsOfDate', right_on='기준일자')
 df = df.drop(columns='기준일자').set_index('AsOfDate')
 
-df = df.loc['2006-04-02':'2022-01-25']
+df = df.loc['2006-04-03':'2022-01-25']
 
 df['adjnav_pc'] = df['AdjustedNAV'].pct_change()
 df['FP_pc'] = df['fixed_price'].pct_change()

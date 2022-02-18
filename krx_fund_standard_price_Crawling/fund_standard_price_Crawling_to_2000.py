@@ -5,7 +5,7 @@ import time
 import random
 
 #saleComp = pd.read_csv('C:/Users/s/PycharmProjects/fund_standard_price_Crawling/saleComp.csv', encoding='cp949')
-date_list = pd.date_range(start='2000-01-01', end='2022-01-10')
+date_list = pd.date_range(start='2000-07-01', end='2022-01-10')
 date_list = date_list.strftime('%Y%m%d')
 
 url = 'https://dis.kofia.or.kr/proframeWeb/XMLSERVICES/'
