@@ -1,10 +1,12 @@
 import requests
 import pandas as pd
+from datetime import datetime
+
 
 url = 'https://dis.kofia.or.kr/proframeWeb/XMLSERVICES/'
 
 
-xml_str = """<?xml version="1.0" encoding="utf-8"?>
+xml_str = f"""<?xml version="1.0" encoding="utf-8"?>
 <message>
   <proframeHeader>
     <pfmAppName>FS-DIS2</pfmAppName>
@@ -13,7 +15,7 @@ xml_str = """<?xml version="1.0" encoding="utf-8"?>
   </proframeHeader>
   <systemHeader></systemHeader>
     <DISCondFuncDTO>
-    <tmpV30>20220110</tmpV30>
+    <tmpV30>{datetime.today().strftime('%Y%m%d')}</tmpV30>
     <tmpV3></tmpV3>
     <tmpV4></tmpV4>
     <tmpV7></tmpV7>
@@ -25,8 +27,7 @@ xml_str = """<?xml version="1.0" encoding="utf-8"?>
 </DISCondFuncDTO>
 </message>"""
 
-headers = {
-    'Accept': 'text/xml',
+headers = {'Accept': 'text/xml',
            'Accept-Encoding': 'gzip, deflate, br',
            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
            'Connection': 'keep-alive',
@@ -55,4 +56,4 @@ fund_std_price_df = fund_std_price_df.rename(
                 'tmpV7':'기준가격(원)_과표'}
 )
 
-fund_std_price_df.to_csv('C:/Users/user/PycharmProjects/fund_standard_price_Crawling/일별_펀드기준가격/20220110.csv', encoding='cp949')
+fund_std_price_df.to_csv(f"""~/dataknows/RichGo.Investment/{datetime.today().strftime('%Y%m%d')}.csv""", encoding='utf-8-sig')
