@@ -1,63 +1,36 @@
 import pandas as pd
 import requests
 import os
+from scraper.fund_kr.api.fund_daily_by_date import get_fund_daily
+import multitasking
 
 PREFIX = 'cached_fund_daily'
-CACHE_PATH = os.getenv('CACHE_PATH', '.')
+CACHE_PATH = os.getenv('CACHE_PATH', '../..')
 
 
-def get_fund_code_list(base_dt):
+def get_fund_name_sr(base_dt):
     """
-    전체 펀드코드를 리스트로 반환
-    -----------------------
-    :param:
-        base_dt: 기준일
-    :return: list
-        펀드코드
+    기준일 당일 전체 펀드코드별 펀드명 데이터 가져오기
+    --------------------------------------
+    :param base_dt: 기준일
+    :return: Series
+        펀드코드를 인덱스로 하는 펀드명 시리즈
     """
     base_dt = pd.Timestamp(base_dt).strftime('%Y%m%d')
     cache_file_path = f'{CACHE_PATH}/{PREFIX}_{base_dt}.csv'
     if os.path.isfile(cache_file_path):
         daily_fund = pd.read_csv(cache_file_path, index_col=0)
-
         # 겹치는 ticker 가 없는지 확인
         has_not_duplicates = all(~daily_fund.set_index('ticker').index.duplicated(False))
         assert has_not_duplicates
-
-        # daily_fund = daily_fund.set_index('ticker')['name_kr']
-
-        code_list = daily_fund['ticker'].tolist()
-        return code_list
-
-
-def get_fund_name_list(base_dt):
-    """
-    전체 펀드명을 리스트로 반환
-    -----------------------
-    :param:
-        base_dt: 기준일
-    :return: list
-            펀드명
-    """
-    base_dt = pd.Timestamp(base_dt).strftime('%Y%m%d')
-    cache_file_path = f'{CACHE_PATH}/{PREFIX}_{base_dt}.csv'
-    if os.path.isfile(cache_file_path):
-        daily_fund = pd.read_csv(cache_file_path, encoding='utf-8-sig')
-        name_list = daily_fund['name_kr'].tolist()
-        return name_list
-
-
-def get_fund_name_series(base_dt):
-    code_list = get_fund_code_list(base_dt)
-    name_list = get_fund_name_list(base_dt)
-
-    code_list = pd.Series(code_list)
-    code_name = pd.Series(name_list)
-
-    code_name_df = pd.concat([code_list, code_name], axis=1)
-    code_name_sr = code_name_df.set_index(0)
-
-    return code_name_sr
+        daily_fund = daily_fund.set_index('ticker')['name_kr']
+        return daily_fund
+    else:
+        daily_fund = get_fund_daily(base_dt)
+        has_not_duplicates = all(~daily_fund.set_index('ticker').index.duplicated(False))
+        assert has_not_duplicates
+        daily_fund = daily_fund.set_index('ticker')['name_kr']
+        return daily_fund
 
 
 def unreset_price(ticker):
@@ -113,6 +86,12 @@ def unreset_price(ticker):
 
 
 def sales_comp_list():
+    """
+    펀드 판매회사별 펀드코드와 펀드명 데이터 가져오기
+    --------------------------------------
+    :return: DataFrame
+        펀드코드, 펀드명
+    """
     url = 'https://dis.kofia.or.kr/proframeWeb/XMLSERVICES/'
 
     xml_str = """<?xml version="1.0" encoding="utf-8"?>
@@ -1121,3 +1100,5 @@ def sales_comp_list():
     sale_comp_list = sale_comp_df['saleCompCd'].tolist()
 
     return sale_comp_list
+
+

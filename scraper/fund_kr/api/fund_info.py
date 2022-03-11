@@ -1,19 +1,21 @@
 import pandas as pd
 import requests
-import os
-from fund_kr.backup import (get_fund_name_series)
+from scraper.fund_kr.api.backup import (get_fund_name_sr)
+from datetime import datetime
 
-# PREFIX = 'fund_info'
-# CACHE_PATH = os.getenv('CACHE_PATH', '.')
+
+# proxies = {
+#     'http': 'socks5://127.0.0.1:9050',
+#     'https': 'socks5://127.0.0.1:9050'
+# }
 
 def get_fund_info(base_dt, ticker):
     """
     펀드기본정보 스크래핑
-    ---------------------
+    -----------------
     :param
         base_dt: 기준일
         ticker: 펀드코드
-        name: 펀드명
     :return: DataFrame
         펀드기본정보
     """
@@ -41,7 +43,9 @@ def get_fund_info(base_dt, ticker):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36'
     }
 
-    res = requests.post(url, data=xml_str, headers=headers).text
+    res = requests.post(url, data=xml_str, headers=headers,
+                        # proxies=proxies
+                        ).text
     fund_std_info_df = pd.read_xml(res, xpath='.//COMFundBasInfoOutDTO')
 
     # product_info DB에 넣을 항목들만 남기고 드롭 후 컬럼명 바꾸기
@@ -113,15 +117,13 @@ def get_fund_info(base_dt, ticker):
 
     fund_info_df = fund_std_info_df.copy()
 
-    name_list = get_fund_name_series(base_dt)
-    fund_info_df['product_name'] = name_list.loc[ticker].values
-    name = fund_info_df['product_name'].values
+    name_list = get_fund_name_sr(base_dt)
+    fund_info_df['product_name'] = name_list.loc[ticker]
 
-    # fund_info_df['delisting_dt'] = [""]
     fund_info_df['ticker'] = ticker
     fund_info_df = fund_info_df.set_index('ticker')
 
-    # cache_file_path = f'{CACHE_PATH}/{PREFIX}_{name}.csv'
-    # fund_info_df.to_csv(cache_file_path, encoding='utf-8-sig')
+    # fund_info_df['delisting_dt'] = []
+    fund_info_df['updated_at'] = datetime.today().strftime('%Y-%m-%d')
 
     return fund_info_df
