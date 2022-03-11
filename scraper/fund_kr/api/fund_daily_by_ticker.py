@@ -4,13 +4,17 @@ from datetime import datetime
 import datetime as dt
 import numpy as np
 import os
-from fund_kr.backup import (unreset_price)
+from scraper.fund_kr.api.backup import (unreset_price)
 
 PREFIX = 'cached_fund_price'
 PREFIX_adj = 'fund_adj_pr'
-CACHE_PATH = os.getenv('CACHE_PATH', '.')
+CACHE_PATH = os.getenv('CACHE_PATH', '../..')
 today = datetime.today().strftime('%Y%m%d')
 
+# proxies = {
+#     'http': 'socks5://127.0.0.1:9050',
+#     'https': 'socks5://127.0.0.1:9050'
+# }
 
 def get_fund_historical_price(ticker):
     """
@@ -23,7 +27,7 @@ def get_fund_historical_price(ticker):
     """
     cache_file_path = f'{CACHE_PATH}/{PREFIX}_{ticker}.csv'
     if os.path.isfile(cache_file_path):
-        return pd.read_csv(cache_file_path)
+        return pd.read_csv(cache_file_path, index_col=0)
 
     url = 'https://dis.kofia.or.kr/proframeWeb/XMLSERVICES/'
 
@@ -57,13 +61,16 @@ def get_fund_historical_price(ticker):
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36'
     }
 
-    res = requests.post(url, data=xml, headers=headers).text
+    res = requests.post(url, data=xml, headers=headers,
+                        # proxies=proxies
+                        ).text
     fund_price_df = pd.read_xml(res, xpath='.//priceModList')
 
     fund_price_df['code'] = ticker
     fund_price_df = fund_price_df[['code', 'standardDt', 'standardCot', 'standardassStdCot', 'uOriginalAmt']].copy()
     fund_price_df = fund_price_df.rename(columns={'standardassStdCot': 'tax_base_nav',
-                                                  'uOriginalAmt': 'aum'})
+                                                  'uOriginalAmt': 'aum',
+                                                  })
     fund_price_df['standardDt'] = pd.to_datetime(fund_price_df['standardDt'], format='%Y%m%d')
     fund_price_df = fund_price_df.sort_values(['code', 'standardDt'], ascending=True)
 
@@ -93,33 +100,22 @@ def get_adj_pr(ticker):
     one_adj['trust_end_dt'] = pd.to_datetime(one_adj['trust_end_dt'])
     """
     회계기말일에 분배가 발생하고, 다음 거래일에 가격이 조정된다.
-    수정기준가로 대체할 거래일자를 맞추기 위해서 get_loc 함수를 사용한다.
-    거래일 날짜 일치여부를 확인하기 위해서 그 전에 하루를 뒤로 민다.
+    수정기준가로 대체할 거래일자를 맞추기 위해서 get_indexer 함수를 사용한다.
+    거래일 날짜 일치 여부를 확인 하기 위해서 그 전에 하루를 뒤로 민다.
     """
     one_adj['trust_end_dt'] = one_adj['trust_end_dt'] + dt.timedelta(days=1)
     """
-    get_loc 으로 기준가 데이터 거래일과 일치하는 날짜가 있으면 해당 날짜로 설정 
-    일치하는 날짜가 없으면 다시 뒤에 있는 날짜와 일치 여부 확인
+    get_loc 으로 기준가 데이터 거래일과 일치 하는 날짜가 있으면 해당 날짜로 설정 
+    일치 하는 날짜가 없으면 다시 뒤에 있는 거래일과 일치 여부 확인 하여 일치 하면 기준가로 채워 넣기
     """
     one_adj.index = one_sr.index[one_sr.index.get_indexer(one_adj['trust_end_dt'], method='bfill')]
 
-    # end_date = one_adj['trust_end_dt'].tolist()
-
-    # dvdnd_dt = []
-    # for d in end_date:
-    #     # dvdnd_dt.append(one_sr.index[one_sr.index.get_loc(f'{d}', method='bfill')])
-    #     # dvdnd_dt.append(one_sr.index[pd.to_datetime(one_sr.index).get_indexer([d], method='bfill')])
-    #     # dvdnd_dt.append(one_sr.index.get_indexer([d], method='bfill'))
-    #     dvdnd_dt.append(one_sr.index[one_sr.index.get_indexer([d], method='bfill')][0])
-
-    # one_adj.index = dvdnd_dt
-
     one_df = one_adj.drop(columns=['code', 'trust_end_dt']).rename(columns={'standardCot': 'dvdnd_pr'})
 
-    one_pr = one_pr.set_index('standardDt')
+    one_pr = one_pr.rename(columns={'standardDt': 'base_dt'})
+    one_pr = one_pr.set_index('base_dt')
     one_pr.index = pd.to_datetime(one_pr.index)
     one_pr = one_pr.join(one_df, how='outer', lsuffix='_org', rsuffix='_adj')
-
 
     one_pr['dv_price'] = np.where(one_pr['dvdnd_pr'].notna(), one_pr.dvdnd_pr, one_pr.standardCot)
     one_pr['dly_rtn_notna'] = np.where(one_pr['dvdnd_pr'].notna(), one_pr.dv_price.pct_change(),
@@ -132,21 +128,26 @@ def get_adj_pr(ticker):
 
     one_pr['adj_pr'] = one_pr['dly_rtn_notna']
     one_pr.loc[one_pr.index[0], 'adj_pr'] = one_pr.loc[one_pr.index[0], 'dv_price']
-    one_pr['adj_pr'] = one_pr['adj_pr'].cumprod()
+    one_pr['adj_pr'] = one_pr['adj_pr'].cumprod().round(decimals=12)
 
     one_pr = one_pr.drop(columns='dly_rtn_isna').rename(columns={'dly_rtn_notna': 'dly_rtn'})
 
     daily_df = one_pr.copy()
     daily_df = daily_df.rename(columns={
         'code': 'ticker',
-        'index': 'base_dt',
         'standardCot': 'nav',
         'standardassStdCot': 'tax_base_nav',
         'uOriginalAmt': 'aum'
     }
     )
-    daily_df = daily_df.drop(columns=['Unnamed: 0', 'dvdnd_pr', 'dv_price', 'dly_rtn'])
+    daily_df = daily_df.drop(columns=['dvdnd_pr', 'dv_price', 'dly_rtn'])
 
-    # daily_df.to_csv(f'{CACHE_PATH}/{PREFIX_adj}_{ticker}.csv')
+    daily_df = daily_df.reset_index()
+    daily_df = daily_df.rename(columns={'index': 'base_dt'})
+    daily_df['base_dt'] = pd.to_datetime(daily_df['base_dt'])
+    daily_df['base_dt'] = daily_df['base_dt'].dt.strftime('%Y-%m-%d')
+    daily_df = daily_df.set_index(['base_dt', 'ticker'])
+
+    daily_df['updated_at'] = datetime.today().strftime('%Y-%m-%d')
 
     return daily_df
