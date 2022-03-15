@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 from scraper.fund_kr.api.backup import (get_fund_name_sr)
 from datetime import datetime
-
+from scraper.fund_kr.api.fund_daily_by_date import (get_fund_daily)
 
 # proxies = {
 #     'http': 'socks5://127.0.0.1:9050',
@@ -73,7 +73,8 @@ def get_fund_info(base_dt, ticker):
                                                       'subClassCd',
                                                       'val1',
                                                       'val2',
-                                                      'val3']
+                                                      'val3',
+                                                      'establishmentDt']
                                              )
 
     fund_std_info_df = fund_std_info_df.rename(
@@ -81,7 +82,7 @@ def get_fund_info(base_dt, ticker):
             'vFundGbNm': 'category',
             'uFundTypNm': 'fund_type',
             # 'vAdditionalEstMtdNm':'추가/단위구분',
-            'establishmentDt': 'listing_dt',
+            # 'establishmentDt': 'listing_dt',
             'classCd': 'class_cd',
             # 'shortCd':'단축코드',
             'trustAccTrm': 'trust_accounting_term',
@@ -122,6 +123,11 @@ def get_fund_info(base_dt, ticker):
 
     fund_info_df['ticker'] = ticker
     fund_info_df = fund_info_df.set_index('ticker')
+
+    daily_fund_df = get_fund_daily(base_dt)
+    daily_fund_df['listing_dt'] = pd.to_datetime(daily_fund_df['listing_dt'], format='%Y%m%d').dt.strftime('%Y-%m-%d')
+    daily_fund_sr = daily_fund_df.set_index('ticker')['listing_dt']
+    fund_info_df = fund_info_df.join(daily_fund_sr)
 
     # fund_info_df['delisting_dt'] = []
     fund_info_df['updated_at'] = datetime.today().strftime('%Y-%m-%d')

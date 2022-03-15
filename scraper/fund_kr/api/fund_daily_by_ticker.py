@@ -74,7 +74,7 @@ def get_fund_historical_price(ticker):
     fund_price_df['standardDt'] = pd.to_datetime(fund_price_df['standardDt'], format='%Y%m%d')
     fund_price_df = fund_price_df.sort_values(['code', 'standardDt'], ascending=True)
 
-    fund_price_df.to_csv(cache_file_path, encoding='utf-8-sig')
+    # fund_price_df.to_csv(cache_file_path, encoding='utf-8-sig')
 
     return fund_price_df
 
@@ -88,8 +88,16 @@ def get_adj_pr(ticker):
     :return: DataFrame
         수정기준가격 컬럼이 포함된 가격 정보
     """
-    unreset_df = unreset_price(ticker)
     price_df = get_fund_historical_price(ticker)
+
+    try:
+        unreset_df = unreset_price(ticker)
+    except:
+        # 결산이 없으면 그대로 수정주가 그냥 복사
+        price_df = price_df.rename(columns={'standardCot': 'nav', 'standardDt': 'base_dt', 'code': 'ticker'})
+        price_df['adj_pr'] = price_df['nav']
+        price_df = price_df.set_index(['base_dt', 'ticker'])
+        return price_df
 
     one_pr = price_df[price_df['code'] == ticker].copy()
     one_adj = unreset_df[unreset_df['code'] == ticker].copy()
