@@ -37,16 +37,16 @@ def get_fund_code_name_test(base_dt):
 
 
 if __name__ == '__main__':
-    test_base_dt = '20220307'
-    test_ticker = 'K55223BT1450'
+    test_base_dt = '20220315'
+    test_ticker = 'K55370BK9768'
     test_salecomp_dt = '20211231'
-    test_salecomp_cd = 'A01001'
+    test_salecomp_cd = 'A01040'
 
     start = time.time()
 
     # print(get_fund_daily_test(test_base_dt))
     # print(get_fund_adj_pr_test(test_ticker))
-    # print(get_fund_info_test(test_base_dt, test_ticker).T)
+    print(get_fund_info_test(test_base_dt, test_ticker).T)
     # print(get_fund_sales_comp_test(test_salecomp_dt, test_salecomp_cd))
 
     # print(get_fund_code_name_test(test_base_dt))
