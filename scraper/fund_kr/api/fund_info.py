@@ -4,6 +4,7 @@ from scraper.fund_kr.api.backup import (get_fund_name_sr)
 from datetime import datetime
 from scraper.fund_kr.api.fund_daily_by_date import (get_fund_daily)
 
+
 # proxies = {
 #     'http': 'socks5://127.0.0.1:9050',
 #     'https': 'socks5://127.0.0.1:9050'
@@ -68,7 +69,6 @@ def get_fund_info(base_dt, ticker):
                                                       'uNoVal8',
                                                       'uNoVal9',
                                                       'uNoVal10',
-                                                      'val4',
                                                       'vImg',
                                                       'subClassCd',
                                                       'val1',
@@ -112,7 +112,7 @@ def get_fund_info(base_dt, ticker):
             # 'uNoVal8':'혼합채권형_유형평균보수_비율_일반사무관리보수',
             # 'uNoVal9':'혼합채권형_유형평균보수_비율_보수합계',
             # 'uNoVal10':'혼합채권형_유형평균보수_비율_총비용비율(TER)',
-            # 'val4':'운용상태'
+            'val4': 'status'
         }
     )
 
