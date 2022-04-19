@@ -27,6 +27,22 @@ def fetch_mng_fund():
     return mng_fund_list
 
 
+def fetch_leftout_mng_fund():
+    """
+    ip 차단 문제로 중간에 끊긴 지점부터 다시 받기 위한 나머지 운용펀드명 리스트
+    :return: DB에 적재되지 않은 나머지 상위 운용펀드 이름 리스트
+    """
+    query = f"""
+    select product_name
+    from fund_kofia.product_info 
+    where private_public = '공모' and trait_division like '%FUND%'
+    and product_name not in (select distinct family_ticker from fund_kofia.product_family)
+    """
+    mng_fund_df = DBConn(FUND_DB).fetch(query).df()
+    mng_fund_list = mng_fund_df['product_name'].to_list()
+    return mng_fund_list
+
+
 def get_family_fund(name_kr, start_dt=None, end_dt=None):
     """
     상위 운용펀드의 코드로 하위 클래스 펀드들을 매핑한다.
@@ -96,7 +112,7 @@ def get_family_fund(name_kr, start_dt=None, end_dt=None):
         pass
     fund_family_df['family_ticker'] = fund_family_df['ticker'].iloc[0]
     fund_family_df['product_name'] = fund_family_df['product_name'].str.replace('└▶', '')
-    family_fund_df = fund_family_df[['ticker', 'family_ticker']].copy()
+    family_fund_df = fund_family_df[['ticker', 'family_ticker', 'product_name']].copy()
 
     return family_fund_df
 
@@ -113,11 +129,12 @@ def update_one_family_fund(update_data_list):
     DBConn(FUND_DB).update(query, update_data_list)
 
 
-def family_fund_worker(name):
+def family_fund_worker(name, i, mng_fund_list):
     family_fund_df = get_family_fund(name)
     update_data_list = family_fund_df.to_dict(orient='records')
     with DBConn(FUND_DB).transaction():
         update_one_family_fund(update_data_list)
+    print(f'{len(mng_fund_list)}/{i} - {name}')
 
 
 def run_multi_process(worker, mng_fund_list, *args):
@@ -125,11 +142,10 @@ def run_multi_process(worker, mng_fund_list, *args):
     print(f'total: {len(mng_fund_list)}')
     try:
         futures_list = []
-        with futures.ProcessPoolExecutor() as executor:
+        with futures.ProcessPoolExecutor(max_workers=1) as executor:
             for i, name in enumerate(mng_fund_list):
-                future = executor.submit(worker, name, i, *args)
+                future = executor.submit(worker, name, i, mng_fund_list, *args)
                 futures_list.append(future)
-                print(f'{len(mng_fund_list)}/{i} - {name}')
         result = futures.wait(futures_list)
         for future in result.done:
             finished.append(future.result())
@@ -144,6 +160,7 @@ def run_multi_process(worker, mng_fund_list, *args):
 
 def update_family_fund():
     mng_fund_list = fetch_mng_fund()
+    # mng_fund_list = fetch_leftout_mng_fund()
     run_multi_process(family_fund_worker, mng_fund_list)
 
 
