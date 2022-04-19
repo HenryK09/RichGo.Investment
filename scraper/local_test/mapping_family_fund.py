@@ -4,6 +4,7 @@ from scraper.common.dbconn import DBConn
 import os
 import concurrent.futures as futures
 
+
 FUND_DB = os.getenv('FUND_DB_URI')
 
 proxies = {
