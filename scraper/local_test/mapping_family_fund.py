@@ -34,14 +34,13 @@ def fetch_leftout_mng_fund():
     :return: DB에 적재되지 않은 나머지 상위 운용펀드 이름 리스트
     """
     query = f"""
-    select product_name
-    from fund_kofia.product_info 
-    where private_public = '공모' and trait_division like '%FUND%'
-    and product_name not in (select distinct family_ticker from fund_kofia.product_family)
+        select ticker, product_name
+        from fund_kofia.product_info
+        where private_public = '공모'
+          and trait_division like '%FUND%'
+          and ticker not in (select distinct ticker from fund_kofia.product_family)
     """
-    mng_fund_df = DBConn(FUND_DB).fetch(query).df()
-    mng_fund_list = mng_fund_df['product_name'].to_list()
-    return mng_fund_list
+    return DBConn(FUND_DB).fetch(query).df()
 
 
 def get_family_fund(name_kr, start_dt=None, end_dt=None):
@@ -120,11 +119,12 @@ def get_family_fund(name_kr, start_dt=None, end_dt=None):
 
 def update_one_family_fund(update_data_list):
     query = '''
-                insert into fund_kofia.product_family (ticker, family_ticker)
-                values (:ticker, :family_ticker)
+                insert into fund_kofia.product_family (ticker, family_ticker, product_name)
+                values (:ticker, :family_ticker, :product_name)
                 ON DUPLICATE KEY UPDATE
                     ticker = VALUES(ticker),
                     family_ticker = VALUES(family_ticker),
+                    product_name = VALUES(product_name),
                     updated_at = now();
             '''
     DBConn(FUND_DB).update(query, update_data_list)
@@ -143,7 +143,7 @@ def run_multi_process(worker, mng_fund_list, *args):
     print(f'total: {len(mng_fund_list)}')
     try:
         futures_list = []
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
+        with futures.ProcessPoolExecutor() as executor:
             for i, name in enumerate(mng_fund_list):
                 future = executor.submit(worker, name, i, mng_fund_list, *args)
                 futures_list.append(future)
@@ -160,9 +160,9 @@ def run_multi_process(worker, mng_fund_list, *args):
 
 
 def update_family_fund():
-    mng_fund_list = fetch_mng_fund()
-    # mng_fund_list = fetch_leftout_mng_fund()
-    run_multi_process(family_fund_worker, mng_fund_list)
+    # mng_fund_list = fetch_mng_fund()
+    info_df = fetch_leftout_mng_fund()
+    run_multi_process(family_fund_worker, info_df['product_name'].tolist())
 
 
 if __name__ == '__main__':

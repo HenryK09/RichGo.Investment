@@ -1,5 +1,4 @@
 import pandas as pd
-
 from scraper.fund_kr.api.fund_daily_by_ticker import get_adj_pr as get_one_fund_adj_pr
 from scraper.fund_kr.api.fund_info import get_fund_info
 from scraper.common.dbconn import DBConn
