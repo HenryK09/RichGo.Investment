@@ -218,5 +218,5 @@ def update_ex_fund():
 
 
 if __name__ == '__main__':
-    # update_family_fund()
-    update_ex_fund()
+    update_family_fund()
+    # update_ex_fund()
