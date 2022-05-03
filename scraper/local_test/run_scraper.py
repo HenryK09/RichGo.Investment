@@ -1,6 +1,7 @@
 import pandas as pd
 from scraper.fund_kr.api.fund_daily_by_ticker import get_adj_pr as get_one_fund_adj_pr
 from scraper.fund_kr.api.fund_info import get_fund_info
+from scraper.fund_kr.api.fund_info import code_info_added
 from scraper.common.dbconn import DBConn
 import concurrent.futures as futures
 import numpy as np
@@ -46,10 +47,13 @@ def update_one_fund_info(data_list):
         insert into fund_kofia.product_info (ticker, product_name, category, fund_type, 
                                              listing_dt, class_cd, trust_accounting_term, 
                                              invest_region, sales_region, trait_division, private_public, 
-                                             ter, frontend_commission_rt, backend_commission_rt, mng_comp, comp_cd)
+                                             ter, frontend_commission_rt, backend_commission_rt, mng_comp, 
+                                             comp_cd, status, class_type, redemption_charge, characteristics, 
+                                             locations, risk_level, is_hedged)
         values (:ticker, :product_name, :category, :fund_type, :listing_dt, :class_cd, 
                 :trust_accounting_term, :invest_region, :sales_region, :trait_division, :private_public, :ter, 
-                :frontend_commission_rt, :backend_commission_rt, :mng_comp, :comp_cd)
+                :frontend_commission_rt, :backend_commission_rt, :mng_comp, :comp_cd, :status, :class_type, 
+                :redemption_charge, :characteristics, :locations, :risk_level, :is_hedged)
         ON DUPLICATE KEY UPDATE
             product_name = VALUES(product_name),
             category = VALUES(category),
@@ -66,6 +70,13 @@ def update_one_fund_info(data_list):
             backend_commission_rt = VALUES(backend_commission_rt),
             mng_comp = VALUES(mng_comp),
             comp_cd = VALUES(comp_cd),
+            status = VALUES(status),
+            class_type = VALUES(class_type),
+            redemption_charge = VALUES(redemption_charge),
+            characteristics = VALUES(characteristics),
+            locations = VALUES(locations),
+            risk_level = VALUES(risk_level),
+            is_hedged = VALUES(is_hedged),
             updated_at = now();
     '''
 
@@ -89,7 +100,8 @@ def fund_daily_worker(ticker, num):
 
 
 def fund_info_worker(ticker, num, base_dt):
-    df = get_fund_info(base_dt, ticker)
+    fund_info_df = get_fund_info(base_dt, ticker)
+    df = code_info_added(fund_info_df)
     df = df.astype(object).where(df.notna(), None)
     data_list = df.reset_index().to_dict(orient='records')
     with DBConn(FUND_DB).transaction():
