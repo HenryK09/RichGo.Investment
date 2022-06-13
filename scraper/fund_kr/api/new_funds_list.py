@@ -42,7 +42,6 @@ def get_new_fund_list(start_dt=None, end_dt=None):
 
 
 if __name__ == '__main__':
-    start_dt = '20220409'
-    end_dt = '20220426'
+    start_dt = '20220427'
+    end_dt = '20220427'
     new_funds_list = get_new_fund_list(start_dt, end_dt)
-    jdf=9

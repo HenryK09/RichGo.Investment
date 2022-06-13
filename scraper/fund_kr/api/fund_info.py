@@ -152,7 +152,7 @@ def code_info_added(fund_info_df):
     df['class_type'] = df['class_type'].replace('8', '클래스H')
     df['class_type'] = df['class_type'].replace('9', '클래스I')
     # redemption charge (8차 분류) 9번째 코드
-    df['redemption_charge'] = df['class_cd'].str.slice(9, 10)
+    df['redemption_charge'] = df['class_cd'].str.slice(8, 9)
     df['redemption_charge'] = df['redemption_charge'].replace('0', '환매수수료없음')
     df['redemption_charge'] = df['redemption_charge'].replace('1', '1개월 미만')
     df['redemption_charge'] = df['redemption_charge'].replace('6', '1년 미만')
@@ -165,7 +165,7 @@ def code_info_added(fund_info_df):
     df['redemption_charge'] = df['redemption_charge'].replace('7', '1년6개월 미만')
     df['redemption_charge'] = df['redemption_charge'].replace('A', '환매불가')
     # characteristics (9차 분류) 10, 11번째 코드
-    df['characteristics'] = df['class_cd'].str.slice(10, 12)
+    df['characteristics'] = df['class_cd'].str.slice(9, 11)
     df['characteristics'] = df['characteristics'].replace('01', '일반형')
     df['characteristics'] = df['characteristics'].replace('02', '개인연금형')
     df['characteristics'] = df['characteristics'].replace('03', '세금우대형')
@@ -232,7 +232,7 @@ def code_info_added(fund_info_df):
     df['characteristics'] = df['characteristics'].replace('83', '부동산.특별자산투자재간접(공모)')
     df['characteristics'] = df['characteristics'].replace('84', '경영참여 목적 일반사모펀드')
     # locations (10차 분류) 12, 13번째 코드
-    df['locations'] = df['class_cd'].str.slice(12, 14)
+    df['locations'] = df['class_cd'].str.slice(11, 13)
     df['locations'] = df['locations'].replace('01', '대한민국')
     df['locations'] = df['locations'].replace('02', '글로벌')
     df['locations'] = df['locations'].replace('03', '아시아')
@@ -288,8 +288,8 @@ def code_info_added(fund_info_df):
 
 if __name__ == '__main__':
     BASEDATE = '20220502'
-    TICKER = 'K55101B55361'
-    # df = get_fund_info(BASEDATE, TICKER)
-    df = pd.read_csv('/Users/user/dataknows/test.csv', encoding='utf-8-sig')
+    TICKER = 'K55101AZ6913'
+    df = get_fund_info(BASEDATE, TICKER)
+    # df = pd.read_csv('/Users/user/dataknows/test.csv', encoding='utf-8-sig')
     added_df = code_info_added(df)
     dd=0

@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 from scraper_rough.stock_kr.api.stock_daily_by_ticker import get_stock_price
-from scraper_rough.stock_kr.api.seibro_info import get_changed_shares_info
-from scraper_rough.stock_kr.api.seibro_info import get_adj_dps_info
+from scraper_rough.stock_kr.api.seibro_info_v1 import get_changed_shares_info
+from scraper_rough.stock_kr.api.seibro_info_v1 import get_adj_dps_info
 import os
 
 PREFIX_pr = 'cached_pr'
@@ -36,6 +36,7 @@ def get_stock_data(start_dt, end_dt, ticker, name_kr):
     df.index = pd.to_datetime(df.index)
 
     inc_df = df.copy()
+    inc_df['listing_dt'] = pd.to_datetime(inc_df['listing_dt'])
     inc_df['adj_DPS'] = ''
 
     return inc_df
@@ -63,13 +64,17 @@ def mng_reverse_stock_split():
     rev_split_dt = inc_df.query('issue_reason == "액면병합"')['listing_dt'].item()
     rev_split_ratio = (inc_df.loc[inc_df.index == rev_split_dt]['listed_shares'].item()) / (
         inc_df.shift(1).loc[inc_df.index == rev_split_dt]['listed_shares'].item())
-
+    inc_df['adj_DPS'] = np.nan
     inc_df.loc[inc_df.index >= rev_split_dt, 'adj_DPS'] = (
-                inc_df['adj_DPS_cash'] * inc_df['par_value'] / rev_split_ratio * 100)
+                inc_df.loc[inc_df.index >= rev_split_dt, 'adj_DPS_cash'] * inc_df.loc[
+            inc_df.index >= rev_split_dt, 'par_value'] * rev_split_ratio / 100).shift(-2)
     inc_df['rev_split_adj_pr'] = ''
-    inc_df.loc[inc_df.index >= rev_split_dt, 'rev_split_adj_pr'] = inc_df['std_pr'] * rev_split_ratio
-    inc_df.loc[inc_df.index < rev_split_dt, 'adj_DPS'] = (inc_df['adj_DPS_cash'] * inc_df['par_value'] / 100)
-    inc_df.loc[inc_df.index < rev_split_dt, 'rev_split_adj_pr'] = inc_df['std_pr']
+    inc_df.loc[inc_df.index >= rev_split_dt, 'rev_split_adj_pr'] = inc_df.loc[
+                                                                       inc_df.index >= rev_split_dt, 'std_pr'] * rev_split_ratio
+    inc_df.loc[inc_df.index < rev_split_dt, 'adj_DPS'] = (
+                inc_df.loc[inc_df.index < rev_split_dt, 'adj_DPS_cash'] * inc_df.loc[
+            inc_df.index < rev_split_dt, 'par_value'] / 100).shift(-2)
+    inc_df.loc[inc_df.index < rev_split_dt, 'rev_split_adj_pr'] = inc_df.loc[inc_df.index < rev_split_dt, 'std_pr']
 
     return inc_df
 
@@ -141,10 +146,8 @@ def mng_bonus_issue():
 
 
 def main(start_dt, end_dt, ticker, name_kr):
-    # 주식 가격정보, 배당정보, 발행주식수변경정보 가져온 뒤 배당과 액면분할 유무 고려
-    # 무상증자 유무
+    # 무상증자 처리
     bon_df = mng_bonus_issue()
-    # 액면병합 유무
 
     return bon_df
 
@@ -177,5 +180,3 @@ if __name__ == '__main__':
 
     adj_pr_df = main(start_dt, end_dt, ticker, name_kr)
     adj_pr_df.to_csv('/Users/user/dataknows/woosung.csv')
-
-inc_df = get_stock_data(start_dt='20180105', end_dt='20220404', ticker='285130', name_kr='SK케미칼')

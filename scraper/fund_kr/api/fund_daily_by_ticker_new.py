@@ -46,6 +46,7 @@ def unreset_price(ticker):
     unreset_price_df = unreset_price_df[['ticker', 'trustAccend', 'standardCot']].copy()
     unreset_price_df = unreset_price_df.rename(columns={'trustAccend': 'trust_end_dt',
                                                         'standardCot': 'dvd_pr'})
+    unreset_price_df = unreset_price_df[(unreset_price_df['dvd_pr'] > 0.0001) | (unreset_price_df['dvd_pr'] < -0.0001)]
     unreset_price_df['trust_end_dt'] = pd.to_datetime(unreset_price_df['trust_end_dt'], format='%Y%m%d')
     unreset_price_df = unreset_price_df.sort_values(['ticker', 'trust_end_dt'], ascending=True)
 
