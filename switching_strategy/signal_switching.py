@@ -176,5 +176,3 @@ def performance_analysis():
 
 
 performance_analysis()
-
-k = 0

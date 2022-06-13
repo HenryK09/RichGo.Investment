@@ -72,8 +72,15 @@ def get_dividend_added_price(last_trading_dt=None, yesterday=None):
 
 
 def get_daily_price_kofia(last_trading_dt=None, today=None):
-    # last_trading_dt =
-    today = pd.Timestamp.now(tz='Asia/Seoul').strftime('%Y%m%d')
+    if last_trading_dt is None:
+        # last_trading_dt =
+        pass
+    else:
+        last_trading_dt = last_trading_dt
+    if today is None:
+        today = pd.Timestamp.now(tz='Asia/Seoul').strftime('%Y%m%d')
+    else:
+        today = today
 
     # for verification
     # kofia_pr_ytdy2 = get_fund_daily('20220407')
@@ -84,11 +91,11 @@ def get_daily_price_kofia(last_trading_dt=None, today=None):
     # ytdy_kofia_pr = get_fund_daily('20220408')
     # tdy_kofia_pr = get_fund_daily('20220411')
 
-    # last_kofia_pr = get_fund_daily(last_trading_dt)
-    # tdy_kofia_pr = get_fund_daily(today)
+    last_kofia_pr = get_fund_daily(last_trading_dt)
+    tdy_kofia_pr = get_fund_daily(today)
 
-    last_kofia_pr = pd.read_csv('/Users/user/dataknows/20220408.csv', encoding='utf-8-sig')
-    tdy_kofia_pr = pd.read_csv('/Users/user/dataknows/20220411.csv', encoding='utf-8-sig')
+    # last_kofia_pr = pd.read_csv('/Users/user/dataknows/20220408.csv', encoding='utf-8-sig')
+    # tdy_kofia_pr = pd.read_csv('/Users/user/dataknows/20220411.csv', encoding='utf-8-sig')
 
     last_kofia_pr = last_kofia_pr[['ticker', 'base_dt', 'nav']]
     tdy_kofia_pr = tdy_kofia_pr[['ticker', 'base_dt', 'nav']]
@@ -111,12 +118,11 @@ def replace_price(dvd_df):
     return kofia_price_chg
 
 
-def get_daily_price_db(last_trading_dt=None):
-    # last_trading_dt =
+def get_daily_price_db():
     query = '''
-        select ticker, base_dt, adj_pr
+        select ticker, max(base_dt) as base_dt, adj_pr
         from fund_kofia.product_daily
-        where base_dt = '20220408'
+        where base_dt = max(base_dt)
     '''
     return DBConn(FUND_DB).fetch(query).df()
 

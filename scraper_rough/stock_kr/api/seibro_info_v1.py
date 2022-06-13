@@ -104,8 +104,8 @@ def get_adj_dps_info(from_dt=None, to_dt=None, name_kr=None):
     return df
 
 
-# df = get_adj_dps_info(from_dt='20210601', to_dt='20220329', name_kr='삼성전자')
-
+df = get_adj_dps_info(from_dt='20210101', to_dt='20220413', name_kr='SK케미칼')
+dd=0
 
 def get_changed_shares_info(from_dt=None, to_dt=None, name_kr=None):
     if to_dt is None:
@@ -198,4 +198,64 @@ def get_changed_shares_info(from_dt=None, to_dt=None, name_kr=None):
 
         return df
 
-# shares_df = get_changed_shares_info(from_dt='20180101', to_dt='20220331', name_kr='삼성전자')
+
+def get_changed_shares_info2(ticker, from_dt=None, to_dt=None):
+    if to_dt is None:
+        to_dt = pd.Timestamp.now(tz='Asia/Seoul').strftime('%Y%m%d')
+    else:
+        to_dt = pd.Timestamp(to_dt).strftime('%Y%m%d')
+
+    if from_dt is None:
+        from_dt = '19000101'
+    else:
+        from_dt = pd.Timestamp(from_dt).strftime('%Y%m%d')
+
+    company_num = int(ticker[:-1])
+    url = 'https://seibro.or.kr/websquare/engine/proworks/callServletService.jsp'
+    header = {
+        'Referer': 'https://seibro.or.kr/websquare/control.jsp?w2xPath=/IPORTAL/user/company/BIP_CNTS01012V.xml&menuNo=282'
+    }
+
+    data = f'''
+    <reqParam action="chgDetailsListCheckEL1" task="ksd.safe.bip.cnts.Company.process.EntrFnafInfoPTask">
+      <MENU_NO value="282"/>
+      <CMM_BTN_ABBR_NM value="allview,allview,print,hwp,word,pdf,searchIcon,seach,xls,link,link,wide,wide,top,"/>
+      <W2XPATH value="/IPORTAL/user/company/BIP_CNTS01012V.xml"/>
+      <ISSUCO_CUSTNO value="{company_num}"/>
+      <RGT_LINK_RACD value=""/>
+      <SECN_KACD value="0101"/>
+      <ISSU_DT_FROM value="{from_dt}"/>
+      <ISSU_DT_TO value="{to_dt}"/>
+      <STARTPAGE value="1"/>
+      <ENDPAGE value="10000"/>
+    </reqParam>
+    '''.encode('utf-8')
+
+    r = requests.post(url, data=data, headers=header)
+
+    issue_list = []
+    for a in re.findall(r'(<result>.*</result>)', r.text):
+        temp_item_info = {}
+        for b in re.findall(r'<\w+\svalue=.*/>', a.replace('/>', '/>\n')):
+            items = b.split(' value=')
+            temp_item_info[items[0][1:]] = items[1][1:-3]
+        issue_list.append(temp_item_info)
+
+    df = pd.DataFrame(issue_list).rename(columns={
+        'ISSU_DT': 'issue_dt',
+        'REP_SECN_NM': 'name_kr',
+        'SECN_KACD_NM': 'stock_type',
+        'SECN_ISSU_NTIMES': 'issue_count',
+        'RGT_LINK_RACD_NM': 'issue_reason',
+        'PVAL': 'par_value',
+        'LIST_DT': 'listing_dt',
+        'ISSU_QTY': 'issued_shares',
+        'ISSU_FORM': 'issue_form',
+        'ISSUPRC': 'issued_pr_share'
+    })
+    df = df.drop(columns=['SECN_KACD', 'RGT_LINK_RACD'])
+    df['issue_dt'] = pd.to_datetime(df['issue_dt'])
+    df['listing_dt'] = pd.to_datetime(df['listing_dt'])
+    df = df.set_index(['name_kr'])
+
+    return df
